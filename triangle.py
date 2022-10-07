@@ -9,20 +9,6 @@ from alpaca.trading.enums import AssetClass
 
 from datetime import datetime
 
-# no keys required for crypto data
-client = CryptoHistoricalDataClient()
-
-# single symbol request
-request_params = CryptoLatestQuoteRequest(symbol_or_symbols="ETH/USD")
-
-latest_quote = client.get_crypto_latest_quote(request_params)
-
-# must use symbol to access even though it is single symbol
-latest_quote["ETH/USD"].ask_price
-print(latest_quote)
-
-
-
 
 class Triangle:
     """The primary function of this class is to determine if an arbitrage opportunity exists."""
@@ -30,6 +16,7 @@ class Triangle:
         self.client = CryptoHistoricalDataClient()
         self.api_key = 'PKPO1PBAYQWDG1BX83W1'
         self.secret_key = 'TUZDp8DncWtYVXLvliGsbfHDlmUvU9aJqenJLAbn'
+        self.tradable_assets = self.get_list_of_tradable_assets()
     def arbitrage_opportunity_exists(self) -> bool:
         pass
     def fetch_latest_price(self, symbol) -> float:
@@ -46,19 +33,33 @@ class Triangle:
         search_params = GetAssetsRequest(asset_class=AssetClass.CRYPTO)
         assets = trading_client.get_all_assets(search_params)
         return assets
+    def get_list_of_tradable_assets(self):
+        assets = self.get_assets()
+        tradable_assets = []
+        for asset in assets:
+            if asset.tradable:
+                # Only look at tokens that can be traded for BTC
+                if "BTC" in asset.symbol and "BTC" != asset.symbol[:3]:
+                    # Get only the part before the slash
+                    tradable_assets.append(asset.symbol.split('/')[0])
+        return tradable_assets
 
 
 
-t = Triangle()
-print(t.fetch_latest_price("AVAX/USDT"))
-print(t.fetch_latest_price("AVAX/BTC"))
-print(1 / t.fetch_latest_price("BTC/USDT"))
+def main():
+    t = Triangle()
+    print(t.fetch_latest_price("AVAX/USDT"))
+    print(t.fetch_latest_price("AVAX/BTC"))
+    print(1 / t.fetch_latest_price("BTC/USDT"))
 
-print(t.compute_profit())
+    print(t.compute_profit())
 
-for asset in t.get_assets():
-    if asset.tradable:
-        if asset.symbol[:4] == "AVAX":
-            print(asset.symbol)
+    print(t.tradable_assets)
+
+
+
+if __name__ == "__main__":
+    main()
+
 
 

@@ -9,6 +9,8 @@ from alpaca.trading.enums import AssetClass
 
 from datetime import datetime
 
+from colorama import Fore
+
 
 class Triangle:
     """The primary function of this class is to determine if an arbitrage opportunity exists."""
@@ -24,10 +26,13 @@ class Triangle:
         request_params = CryptoLatestQuoteRequest(symbol_or_symbols=symbol)
         latest_quote = self.client.get_crypto_latest_quote(request_params)
         return latest_quote[symbol].ask_price
-    def compute_profit(self):
-        return self.fetch_latest_price("BTC/USDT") * \
-            self.fetch_latest_price("ETH/BTC") * \
-            (1 / self.fetch_latest_price("ETH/USDT"))
+    def compute_profit(self, symbol: str):
+        try:
+            return self.fetch_latest_price("BTC/USDT") * \
+                self.fetch_latest_price(symbol + "/BTC") * \
+                (1 / self.fetch_latest_price(symbol + "/USDT"))
+        except KeyError as e:
+            raise KeyError(str(e))
     def get_assets(self):
         trading_client = TradingClient(self.api_key, self.secret_key)
         search_params = GetAssetsRequest(asset_class=AssetClass.CRYPTO)
@@ -52,9 +57,20 @@ def main():
     print(t.fetch_latest_price("AVAX/BTC"))
     print(1 / t.fetch_latest_price("BTC/USDT"))
 
-    print(t.compute_profit())
+    print(t.compute_profit("ETH"))
 
     print(t.tradable_assets)
+    for asset in t.tradable_assets:
+        try: 
+            profit = t.compute_profit(asset)
+        except KeyError:
+            pass
+        else:
+            if profit > 1:
+                print(asset + ": " + Fore.GREEN + str(profit) + Fore.WHITE)
+            else:
+                print(asset + ": " + Fore.RED + str(profit) + Fore.WHITE)
+            
 
 
 

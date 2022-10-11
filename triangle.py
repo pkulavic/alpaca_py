@@ -81,12 +81,11 @@ class Trader:
     def __init__(self) -> None:
         super().__init__()
         self.triangle = Triangle()
-    def run(self) -> None:
+    def run(self, symbol) -> None:
         """This function monitors market prices. If it notices a profitable opportunity, 
         it executes a trade."""
         # Liquidates all open positions beforehand
-        self.triangle.trading_client.close_all_positions(True)
-        symbol = "YFI"
+        # self.triangle.trading_client.close_all_positions(True)
         print(self.execute_triangle_trade(symbol=symbol))
     def execute_triangle_trade(self, symbol: str, amount=DEFAULT_AMOUNT_USD) -> None: #returns an order
         order1 = LimitOrderRequest(
@@ -121,10 +120,11 @@ class Trader:
         order3 = LimitOrderRequest(
             symbol=f"{symbol}/USD",
             limit_price=self.triangle.fetch_latest_bid(f"{symbol}/USD"),
-            qty=float(self.triangle.trading_client.get_open_position(f"{symbol}USD").qty),
+            qty=(float(self.triangle.trading_client.get_open_position(f"{symbol}USD").qty) // .001 / 1000),
             side=OrderSide.SELL,
             time_in_force=TimeInForce.GTC
         )
+        print(order3.qty)
         order3_response = self.triangle.trading_client.submit_order(order_data=order3)
 
         while self.get_latest_closed_order().id != order3_response.id:
@@ -152,12 +152,12 @@ class Trader:
         return self.get_all_orders()[0]
     
     def get_balance_by_token(self, symbol):
-        pass
+        return self.triangle.trading_client.get_open_position(symbol)
 
     def get_open_position(self, symbol):
         pass
 
-    
+
 
 
 
